@@ -1,6 +1,20 @@
 <html>
 <head>
-   <title>Hello world</title>
+   <title>ITTO Drill</title>
 </head>
-<body>Hello world!</body>
+<body>
+    <section id="ittoQuizContainer">
+    </section>
+    <section id="ittoModelContainer">
+    </section>
+    <script src="./model.js"></script>
+    <script src="./quiz.js"></script>
+    <script src="./app.js"></script>
+    <script>
+        var containerElem = window.document.getElementById("ittoQuizContainer");
+        var modelElem = window.document.getElementById("ittoModelContainer");
+
+        window.app.create(window.itto, containerElem, modelElem);
+    </script>
+</body>
 </html>
