@@ -112,7 +112,7 @@
         options.splice(randomInt(optionCount), 0, correctOption);
 
         return {
-            text: "_ _ _ _ _ is " + prependAOrAn(attributeLabel).toLowerCase() + " of " + processLabel,
+            text: "$placeholder$ is " + prependAOrAn(attributeLabel).toLowerCase() + " of " + processLabel,
             options: options,
             answer: correctOption
         };

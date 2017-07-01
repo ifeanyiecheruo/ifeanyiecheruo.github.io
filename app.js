@@ -3,6 +3,15 @@
     var expectedModelVersion = "1.0";
     var modelStore = createModelStorageClient("ittomodel");
 
+    (global.app = global.app || {}).onQuestionChanged = function(event, radioName) {
+        var sourceText = event.target.value;
+        var target = global.document.getElementById(radioName);
+
+        target.innerText = sourceText;
+
+        return false;
+    };
+
     (global.app = global.app || {}).create = function(itto, containerElem, modelElem) {
         var model = modelStore.load() || deepClone(itto.model);
 
@@ -38,17 +47,19 @@
     }
 
     function renderQuestions(elem, questions) {
-        var questionItems = questions.map(function (question) {
+        var questionItems = questions.map(function (question, index) {
             var optionItems = question.options.map(function (option) { 
-                return "<li>" + option + "</li>"; }
+                var radioName = "option_" + index;
+                return "<li><input type='radio' onchange='return app.onQuestionChanged(event, \"" + radioName + "\");' value='" + option + "' name='" + radioName + "'> " + option + "</li>"; }
             );
 
-            return "<li><span>" + question.text + "</span>" +
-                "<ol type=\"a\">" + optionItems.join("") + 
+            var replacement = "<span id='option_" + index + "'>........</span>";
+            return "<li><span>" + question.text.replace("$placeholder$", replacement) + "</span>" +
+                "<ol type='a'>" + optionItems.join("") + 
                 "</ol></li>";
         });
 
-        elem.innerHTML = "<ol type=\"1\">" + questionItems.join("") + "</ol>";
+        elem.innerHTML = "<ol type='1'>" + questionItems.join("") + "</ol>";
     }
 
     function renderModel(elem, model) {
