@@ -31,8 +31,8 @@
         return input[randomInt(input.length)];
     }
 
-    function isPublicAttributeName(name) {
-        return name.indexOf("__") !== 0;
+    function isPublicAttributeKey(key) {
+        return key.indexOf("__") !== 0;
     }
 
     function shuffle(input) {
@@ -49,7 +49,7 @@
 
     function getAllProcessAttributeValues(model, attributeName) {
         var result = {};
-        var attributeIndex = model.attributeMap[attributeName];
+        var attributeIndex = model.attributeMap[attributeName].index;
 
         model.items.forEach(function (item) {
             var attrValue = item[attributeIndex];
@@ -83,34 +83,36 @@
         var attributeName;
         var attributeValues;
         var correctOptions;
-        var attributeNames = Object.keys(model.attributeMap).filter(isPublicAttributeName);
+        var attributeKeys = Object.keys(model.attributeMap).filter(isPublicAttributeKey);
 
-        while (attributeNames.length > 0) {
-            attributeName = getRandomItem(attributeNames);
-            correctOptions = process[model.attributeMap[attributeName]];
+        while (attributeKeys.length > 0) {
+            attributeKey = getRandomItem(attributeKeys);
+            correctOptions = process[model.attributeMap[attributeKey].index];
 
             if (!Array.isArray(correctOptions) || correctOptions.length < 1) {
                 // The process does not have values for the randomly selected attribute
                 // Remove that attribute from the set of attribute candidates and try again
-                attributeNames.splice(attributeNames.indexOf(attributeName), 1);
+                attributeKeys.splice(attributeKeys.indexOf(attributeKey), 1);
                 continue;
             }
 
             break;
         }
 
-        if (attributeNames.length < 1) {
+        if (attributeKeys.length < 1) {
             return;
         }
 
+        var processLabel = process[model.attributeMap.__name.index];
+        var attributeLabel = model.attributeMap[attributeKey].label;
         var correctOption = getRandomItem(correctOptions);
-        var allOptions = getAllProcessAttributeValues(model, attributeName);
+        var allOptions = getAllProcessAttributeValues(model, attributeKey);
         var allWrongOptions = removeKeys(allOptions, correctOptions);
         var options = getRandomSubset(Object.keys(allWrongOptions), optionCount - 1);
         options.splice(randomInt(optionCount), 0, correctOption);
 
         return {
-            text: "_ _ _ _ _ is " + prependAOrAn(attributeName) + " of " + process[model.attributeMap.__name],
+            text: "_ _ _ _ _ is " + prependAOrAn(attributeLabel).toLowerCase() + " of " + processLabel,
             options: options,
             answer: correctOption
         };

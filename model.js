@@ -3,29 +3,26 @@
 
     (global.itto = global.itto || {}).model = {
         attributeMap:{
-            "__name": 0,
-            "input": 1,
-            "tool": 2,
-            "technique": 3,
-            "output": 4 
+            "__version": "1.0",
+            "__name": { label: "Process", index: 0, },
+            "input": { label: "Input", index: 1, },
+            "toolAndtechnique": { label: "Tool or Technique", index: 2, },
+            "output": { label: "Output", index: 3, }, 
         },
         items: [
             ["bake", 
                 ["flour", "sugar", "butter", "cinnamon"], 
-                ["spatula", "sieve", "pan", "oven"], 
-                ["whisking", "beating", "sifting"], 
+                ["spatula", "sieve", "pan", "oven", "whisking", "beating", "sifting"], 
                 ["cake"]
             ],
             ["craft",
                 ["cloth", "button", "thread", "googly-eyes", "glue"],
-                ["scissors", "needle", "tape"],
-                ["stitch", "tape", "hem"],
+                ["scissors", "needle", "tape", "stitch", "tape", "hem"],
                 ["puppet"]
             ],
             ["draw",
                 ["subject"],
-                ["pen", "paper"],
-                ["cross-hatch"],
+                ["pen", "paper", "cross-hatch"],
                 ["portrait"]
             ]
         ]

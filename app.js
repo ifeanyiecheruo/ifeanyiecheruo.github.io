@@ -1,14 +1,14 @@
 (function () {
     var global = window;
+    var expectedModelVersion = "1.0";
+    var modelStore = createModelStorageClient("ittomodel");
 
     (global.app = global.app || {}).create = function(itto, containerElem, modelElem) {
-        var model = JSON.parse(JSON.stringify(itto.model));
+        var model = modelStore.load() || deepClone(itto.model);
+
         model.onChanged = function() {
-            saveModel(model);
+            modelStore.save(model);
         };
-
-
-        loadModel(model);
 
         var quiz = itto.quiz.create(model, {
             questionCount: 5,
@@ -38,16 +38,17 @@
     }
 
     function renderQuestions(elem, questions) {
-        elem.innerHTML = "<ol type=\"1\">" +
-            questions.map(function (question) {
-                return "<li><span>" + question.text + "</span>" +
-                    "<ol type=\"a\">" + 
-                    question.options.map(function (option) { 
-                        return "<li>" + option + "</li>"; }
-                    ).join("") + 
-                    "</ol></li>";
-            }).join("") +
-            "</ol>";
+        var questionItems = questions.map(function (question) {
+            var optionItems = question.options.map(function (option) { 
+                return "<li>" + option + "</li>"; }
+            );
+
+            return "<li><span>" + question.text + "</span>" +
+                "<ol type=\"a\">" + optionItems.join("") + 
+                "</ol></li>";
+        });
+
+        elem.innerHTML = "<ol type=\"1\">" + questionItems.join("") + "</ol>";
     }
 
     function renderModel(elem, model) {
@@ -62,18 +63,27 @@
 
         // Build the header
         var tHeadElem = tableElem.createTHead();
+        var trElem = window.document.createElement("tr");
         Object.keys(model.attributeMap).forEach(function (key) {
-            // for each column
-            var trElem = window.document.createElement("tr");
-            trElem.innerText = key;
+            var attr = model.attributeMap[key];
+            var attrIndex = attr.index;
+
+            if (typeof attrIndex !== "undefined") {
+                // for each column
+                var thElem = window.document.createElement("th");
+                thElem.innerText = attr.label;
+                trElem.appendChild(thElem);
+            }
         });
+        tHeadElem.appendChild(trElem);
 
         // Build the body
         var tBodyElem = tableElem.createTBody();
         model.items.forEach(function (process) {
             // for each row
-            renderModelRow(tHeadElem, model, process);
+            renderModelRow(tBodyElem, model, process);
         });
+        tableElem.appendChild(tBodyElem);
 
         formElem.appendChild(tableElem);
         elem.appendChild(formElem);
@@ -83,18 +93,22 @@
         var trElem = tHeadElem.insertRow(-1);
         Object.keys(model.attributeMap).forEach(function (key) {
             // for each column
-            var attrIndex = model.attributeMap[key];
-            var tdElem = trElem.insertCell(-1);
-            var inputElem = window.document.createElement("input");
-            inputElem.type = "text";
-            inputElem.value = valueToText(process[attrIndex]);
+            var attr = model.attributeMap[key];
+            var attrIndex = attr.index;
 
-            if (model.onChanged) {
-                var commitEdits = createCommitEditsCallback(inputElem, model, process, attrIndex);
-                inputElem.addEventListener("blur", commitEdits);
+            if (typeof attrIndex !== "undefined") {
+                var tdElem = trElem.insertCell(-1);
+                var inputElem = window.document.createElement("input");
+                inputElem.type = "text";
+                inputElem.value = valueToText(process[attrIndex]);
+
+                if (model.onChanged) {
+                    var commitEdits = createCommitEditsCallback(inputElem, model, process, attrIndex);
+                    inputElem.addEventListener("blur", commitEdits);
+                }
+
+                tdElem.appendChild(inputElem);
             }
-
-            tdElem.appendChild(inputElem);
         });
     }
 
@@ -103,30 +117,6 @@
             process[attrIndex] = textToValue(attrIndex > 0, inputElem.value);
             model.onChanged();
         };
-    }
-
-    var modelItemsLocalStorageKey = "ittomodel";
-    function loadModel(model) {
-        var itemsString = window.localStorage.getItem(modelItemsLocalStorageKey);
-        var items;
-
-        if (typeof itemsString !== "undefined" && itemsString !== null) {
-            try {
-                items = JSON.parse(itemsString);
-                if (typeof items !== "undefined" && items !== null) {
-                    model.items = items;
-                }
-            } catch (error) {
-                window.localStorage.removeItem(modelItemsLocalStorageKey);
-            }
-        }
-    }
-
-    function saveModel(model) {
-        try {
-            window.localStorage.setItem(modelItemsLocalStorageKey, JSON.stringify(model.items));
-        } catch (error) {
-        }
     }
 
     function valueToText(value) {
@@ -145,5 +135,41 @@
         }
 
         return value;
+    }
+
+    function deepClone(value) {
+        return JSON.parse(JSON.stringify(value));
+    }
+
+    function createModelStorageClient(modelItemsLocalStorageKey) {
+        return {
+            save: saveModel,
+            load: loadModel
+        };
+
+        function loadModel() {
+            var modelString = window.localStorage.getItem(modelItemsLocalStorageKey);
+            var parsedModel;
+            var model;
+
+            if (typeof modelString !== "undefined" && modelString !== null) {
+                try {
+                    parsedModel = JSON.parse(modelString);
+                    if (typeof parsedModel !== "undefined" && parsedModel !== null && parsedModel.__version === expectedModelVersion) {
+                        model = parsedModel;
+                    }
+                } catch (error) {
+                }
+            }
+
+            return model;
+        }
+
+        function saveModel(model) {
+            try {
+                window.localStorage.setItem(modelItemsLocalStorageKey, JSON.stringify(model));
+            } catch (error) {
+            }
+        }
     }
 })();
