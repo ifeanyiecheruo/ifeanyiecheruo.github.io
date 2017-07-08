@@ -3,15 +3,6 @@
     var expectedModelVersion = "1.0";
     var modelStore = createModelStorageClient("ittomodel");
 
-    (global.app = global.app || {}).onQuestionChanged = function(event, radioName) {
-        var sourceText = event.target.value;
-        var target = global.document.getElementById(radioName);
-
-        target.innerText = sourceText;
-
-        return false;
-    };
-
     (global.app = global.app || {}).create = function(itto, containerElem, modelElem) {
         var model = modelStore.load() || deepClone(itto.model);
 
@@ -20,7 +11,7 @@
         };
 
         var quiz = itto.quiz.create(model, {
-            questionCount: 5,
+            questionCount: 20,
             optionCount: 5,
         });
 
@@ -37,29 +28,60 @@
         }*/
     };
 
-    function processForm(e) {
-        if (e.preventDefault) e.preventDefault();
-
-        /* do what you want with the form */
-
-        // You must return false to prevent the default form behavior
-        return false;
-    }
-
     function renderQuestions(elem, questions) {
-        var questionItems = questions.map(function (question, index) {
-            var optionItems = question.options.map(function (option) { 
-                var radioName = "option_" + index;
-                return "<li><input type='radio' onchange='return app.onQuestionChanged(event, \"" + radioName + "\");' value='" + option + "' name='" + radioName + "'> " + option + "</li>"; }
-            );
+        var list = elem.ownerDocument.createElement("ol");
+        list.type = "1";
 
-            var replacement = "<span id='option_" + index + "'>........</span>";
-            return "<li><span>" + question.text.replace("$placeholder$", replacement) + "</span>" +
-                "<ol type='a'>" + optionItems.join("") + 
-                "</ol></li>";
+        questions.forEach(function (question, index) {
+            var li = list.ownerDocument.createElement("li");
+            renderQuestion(li, question, index);
+            list.appendChild(li);
         });
 
-        elem.innerHTML = "<ol type='1'>" + questionItems.join("") + "</ol>";
+        elem.appendChild(list);
+
+        function renderQuestion(elem, question, questionIndex) {
+            var span = elem.ownerDocument.createElement("span");
+            var replacement = "<span id='option_" + questionIndex + "'>........</span>";
+            span.innerHTML = question.text.replace("$placeholder$", replacement);
+
+            var list = elem.ownerDocument.createElement("ol");
+            list.type = "a";
+
+            question.options.forEach(function (option) { 
+                var li = elem.ownerDocument.createElement("li");
+                renderQuestionOption(li, option, questionIndex);
+                list.appendChild(li);
+            });
+            
+            elem.appendChild(span);
+            elem.appendChild(list);
+        }
+
+        function renderQuestionOption(elem, option, questionIndex) {
+            var radioName = "option_" + questionIndex;
+            var radioElem = elem.ownerDocument.createElement("input");
+            radioElem.type = "radio";
+            radioElem.value = option;
+            radioElem.name = radioName;
+            radioElem.addEventListener("change", onQuestionSelectionChanged);
+
+            var span = elem.ownerDocument.createElement("span");
+            span.innerText = " " + option;
+
+            elem.appendChild(radioElem);
+            elem.appendChild(span);
+
+            function onQuestionSelectionChanged(event) {
+                var radioName = event.target.name;
+                var radioSelection = event.target.value;
+                var target = global.document.getElementById(radioName);
+
+                target.innerText = radioSelection;
+
+                return false;
+            }
+        }
     }
 
     function renderModel(elem, model) {
@@ -98,54 +120,55 @@
 
         formElem.appendChild(tableElem);
         elem.appendChild(formElem);
-    }
 
-    function renderModelRow(tHeadElem, model, process) {
-        var trElem = tHeadElem.insertRow(-1);
-        Object.keys(model.attributeMap).forEach(function (key) {
-            // for each column
-            var attr = model.attributeMap[key];
-            var attrIndex = attr.index;
+        function renderModelRow(tHeadElem, model, process) {
+            var trElem = tHeadElem.insertRow(-1);
+            Object.keys(model.attributeMap).forEach(function (key) {
+                // for each column
+                var attr = model.attributeMap[key];
+                var attrIndex = attr.index;
 
-            if (typeof attrIndex !== "undefined") {
-                var tdElem = trElem.insertCell(-1);
-                var inputElem = window.document.createElement("input");
-                inputElem.type = "text";
-                inputElem.value = valueToText(process[attrIndex]);
+                if (typeof attrIndex !== "undefined") {
+                    var tdElem = trElem.insertCell(-1);
+                    var inputElem = window.document.createElement("input");
+                    inputElem.type = "text";
+                    inputElem.value = valueToText(process[attrIndex]);
 
-                if (model.onChanged) {
-                    var commitEdits = createCommitEditsCallback(inputElem, model, process, attrIndex);
-                    inputElem.addEventListener("blur", commitEdits);
+                    if (model.onChanged) {
+                        var commitEdits = createCommitEditsCallback(inputElem, model, process, attrIndex);
+                        inputElem.addEventListener("blur", commitEdits);
+                    }
+
+                    tdElem.appendChild(inputElem);
                 }
-
-                tdElem.appendChild(inputElem);
-            }
-        });
-    }
-
-    function createCommitEditsCallback(inputElem, model, process, attrIndex) {
-        return function() {
-            process[attrIndex] = textToValue(attrIndex > 0, inputElem.value);
-            model.onChanged();
-        };
-    }
-
-    function valueToText(value) {
-        return Array.isArray(value) ? value.join(", ") : value;
-    }
-
-    function textToValue(isArray, text) {
-        var value;
-
-        if (isArray) {
-            value = (text || "").split(",").map(function (item) {
-                return item.trim();
             });
-        } else {
-            value = (text || "").trim();
         }
 
-        return value;
+        function createCommitEditsCallback(inputElem, model, process, attrIndex) {
+            return function() {
+                process[attrIndex] = textToValue(attrIndex > 0, inputElem.value);
+                model.onChanged();
+            };
+        }
+
+        function valueToText(value) {
+            return Array.isArray(value) ? value.join(", ") : value;
+        }
+
+        function textToValue(isArray, text) {
+            var value;
+
+            if (isArray) {
+                value = (text || "").split(",").map(function (item) {
+                    return item.trim();
+                });
+            } else {
+                value = (text || "").trim();
+            }
+
+            return value;
+        }
+
     }
 
     function deepClone(value) {
