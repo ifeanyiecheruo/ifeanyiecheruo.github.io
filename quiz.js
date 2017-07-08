@@ -3,48 +3,49 @@
 
     (global.itto = global.itto || {}).quiz = {
         create: function(model, options) {
-            var processes = getRandomSubset(model.items, options.questionCount);
+            var sampler = getReservoirSampler(options.questionCount);
+            //var allOptionsPerKey = {};
 
-            var questions = processes.map(function (process) {
-                return createQuestion(process, model, options.optionCount);
-            }).filter(function (question) {
-                return typeof question !== "undefined";
+            forEachOptionGroup(model, function (model, process, attributeKey, correctOptions) {
+                correctOptions.forEach(function (option, index) {
+                    sampler.sample({
+                        model: model,
+                        process: process,
+                        attributeKey: attributeKey,
+                        correctOptions: correctOptions,
+                        correctOptionIndex: index,
+                    });
+                }, this);
             });
-
+            
             return {
-                questions: questions
+                questions: shuffle(sampler.getResult()).map(function (item) {
+                    var model = item.model;
+                    var process = item.process;
+                    var attributeKey = item.attributeKey;
+                    var correctOptions = item.correctOptions;
+                    var correctOptionIndex = item.correctOptionIndex;
+
+                    var processLabel = process[model.attributeMap.__name.index];
+                    var attributeLabel = model.attributeMap[attributeKey].label;
+                    var allOptions = getAllProcessAttributeValues(model, attributeKey);
+                    var allWrongOptions = removeKeys(allOptions, correctOptions);
+                    var correctOption = correctOptions[correctOptionIndex];
+                    var questionOptions = getRandomSubset(Object.keys(allWrongOptions), options.optionCount - 1);                
+                    questionOptions.splice(randomInt(options.optionCount), 0, correctOption);
+
+                    return {
+                        text: "$placeholder$ is " + prependAOrAn(attributeLabel).toLowerCase() + " of " + processLabel,
+                        options: questionOptions,
+                        answer: correctOption
+                    };
+                })
             };
         }
     };
 
-    return;
-
-    function randomInt(input) {
-        return Math.floor(Math.random() * input);
-    }
-
-    function getRandomSubset(input, count) {
-        return shuffle(input.slice(0)).slice(0, count);
-    }
-
-    function getRandomItem(input) {
-        return input[randomInt(input.length)];
-    }
-
     function isPublicAttributeKey(key) {
         return key.indexOf("__") !== 0;
-    }
-
-    function shuffle(input) {
-        var i, j, tmp;
-        for (i = input.length - 1; i > 0; i--) {
-            j = randomInt(i);
-            tmp = input[i];
-            input[i] = input[j];
-            input[j] = tmp;
-        }
-
-        return input;
     }
 
     function getAllProcessAttributeValues(model, attributeName) {
@@ -65,12 +66,6 @@
         return result;
     }
 
-    function prependAOrAn(text) {
-        var startsWithVowel = text.length > 0 && "aeiou".indexOf(text[0]) >= 0;
-
-        return (startsWithVowel ? "an " : "a ") + text;
-    }
-
     function removeKeys(dict, keyNames) {
         keyNames.forEach(function (key) {
             delete dict[key];
@@ -79,42 +74,83 @@
         return dict;
     }
 
-    function createQuestion(process, model, optionCount) {
-        var attributeName;
-        var attributeValues;
+    function prependAOrAn(text) {
+        var startsWithVowel = text.length > 0 && "aeiou".indexOf(text[0]) >= 0;
+
+        return (startsWithVowel ? "an " : "a ") + text;
+    }
+
+    function forEachOptionGroup(model, callback) {
+        var processIndex;
+        var process;
+        var attributeIndex;
+        var attributeKey;
         var correctOptions;
         var attributeKeys = Object.keys(model.attributeMap).filter(isPublicAttributeKey);
 
-        while (attributeKeys.length > 0) {
-            attributeKey = getRandomItem(attributeKeys);
-            correctOptions = process[model.attributeMap[attributeKey].index];
-
-            if (!Array.isArray(correctOptions) || correctOptions.length < 1) {
-                // The process does not have values for the randomly selected attribute
-                // Remove that attribute from the set of attribute candidates and try again
-                attributeKeys.splice(attributeKeys.indexOf(attributeKey), 1);
-                continue;
+        for (processIndex = 0; processIndex < model.items.length; processIndex++) {
+            process = model.items[processIndex];
+            for (attributeIndex = 0; attributeIndex < attributeKeys.length; attributeIndex++) {
+                attributeKey = attributeKeys[attributeIndex];
+                correctOptions = getProcessAttributeOptions(model, process, attributeKey);
+                if (callback(model, process, attributeKey, correctOptions)) {
+                    return;
+                }
             }
-
-            break;
         }
 
-        if (attributeKeys.length < 1) {
-            return;
+        function getProcessAttributeOptions(model, process, attributeKey) {
+            var correctOptions = process[model.attributeMap[attributeKey].index];
+
+            return Array.isArray(correctOptions) ? correctOptions : [];
+        }
+    }
+
+    function randomInt(input) {
+        return Math.floor(Math.random() * input);
+    }
+
+    function getRandomSubset(input, count) {
+        var sampler = getReservoirSampler(count);
+
+        input.forEach(sampler.sample, sampler);
+
+        return sampler.getResult();
+    }
+
+    function shuffle(input) {
+        var i, j;
+        var temp;
+
+        for (i = input.length - 1; i > 0; i--) {
+            j = randomInt(i - 1);
+            temp = input[i];
+            input[i] = input[j];
+            input[j] = temp;
         }
 
-        var processLabel = process[model.attributeMap.__name.index];
-        var attributeLabel = model.attributeMap[attributeKey].label;
-        var correctOption = getRandomItem(correctOptions);
-        var allOptions = getAllProcessAttributeValues(model, attributeKey);
-        var allWrongOptions = removeKeys(allOptions, correctOptions);
-        var options = getRandomSubset(Object.keys(allWrongOptions), optionCount - 1);
-        options.splice(randomInt(optionCount), 0, correctOption);
+        return input;
+    }
 
+    function getReservoirSampler(maxSamples) {
+        var result = [];
+        var sampleCount = 0;
         return {
-            text: "$placeholder$ is " + prependAOrAn(attributeLabel).toLowerCase() + " of " + processLabel,
-            options: options,
-            answer: correctOption
+            sample: function(item) {
+                sampleCount++;
+
+                if (result.length < maxSamples) {
+                    result.push(item);
+                } else {
+                    var dstIndex = Math.floor(Math.random() * sampleCount);
+                    if (dstIndex < maxSamples) {
+                        result[dstIndex] = item;
+                    }
+                }
+            },
+            getResult: function () {
+                return result;
+            },
         };
     }
 })();
