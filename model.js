@@ -15,14 +15,14 @@
                 ["spatula", "sieve", "pan", "oven", "whisking", "beating", "sifting"], 
                 ["cake"]
             ],
-            ["craft",
-                ["cloth", "button", "thread", "googly-eyes", "glue"],
-                ["scissors", "needle", "tape", "stitch", "tape", "hem"],
-                ["puppet"]
+            ["fishing",
+                ["bait"],
+                ["fishing-rod", "reeling", "casting"],
+                ["salmon"]
             ],
-            ["draw",
-                ["subject"],
-                ["pen", "paper", "cross-hatch"],
+            ["painting",
+                ["paint"],
+                ["brush", "water-color"],
                 ["portrait"]
             ]
         ]
