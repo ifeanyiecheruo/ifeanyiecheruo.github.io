@@ -1,48 +1,48 @@
-(function () {
-    var global = window;
-
-    (global.itto = global.itto || {}).quiz = {
-        create: function(model, options) {
-            var sampler = getReservoirSampler(options.questionCount);
-            //var allOptionsPerKey = {};
-
-            forEachOptionGroup(model, function (model, process, attributeKey, correctOptions) {
-                correctOptions.forEach(function (option, index) {
-                    sampler.sample({
-                        model: model,
-                        process: process,
-                        attributeKey: attributeKey,
-                        correctOptions: correctOptions,
-                        correctOptionIndex: index,
-                    });
-                }, this);
-            });
-            
-            return {
-                questions: shuffle(sampler.getResult()).map(function (item) {
-                    var model = item.model;
-                    var process = item.process;
-                    var attributeKey = item.attributeKey;
-                    var correctOptions = item.correctOptions;
-                    var correctOptionIndex = item.correctOptionIndex;
-
-                    var processLabel = process[model.attributeMap.__name.index];
-                    var attributeLabel = model.attributeMap[attributeKey].label;
-                    var allOptions = getAllProcessAttributeValues(model, attributeKey);
-                    var allWrongOptions = removeKeys(allOptions, correctOptions);
-                    var correctOption = correctOptions[correctOptionIndex];
-                    var questionOptions = getRandomSubset(Object.keys(allWrongOptions), options.optionCount - 1);                
-                    questionOptions.splice(randomInt(options.optionCount), 0, correctOption);
-
-                    return {
-                        text: "$placeholder$ is " + prependAOrAn(attributeLabel).toLowerCase() + " of " + processLabel,
-                        options: questionOptions,
-                        answer: correctOption
-                    };
-                })
-            };
-        }
+define(function(require) {
+    return {
+        create: create
     };
+
+    function create(model, options) {
+        var sampler = getReservoirSampler(options.questionCount);
+        //var allOptionsPerKey = {};
+
+        forEachOptionGroup(model, function(model, process, attributeKey, correctOptions) {
+            correctOptions.forEach(function(option, index) {
+                sampler.sample({
+                    model: model,
+                    process: process,
+                    attributeKey: attributeKey,
+                    correctOptions: correctOptions,
+                    correctOptionIndex: index,
+                });
+            }, this);
+        });
+
+        return {
+            questions: shuffle(sampler.getResult()).map(function(item) {
+                var model = item.model;
+                var process = item.process;
+                var attributeKey = item.attributeKey;
+                var correctOptions = item.correctOptions;
+                var correctOptionIndex = item.correctOptionIndex;
+
+                var processLabel = process[model.attributeMap.__name.index];
+                var attributeLabel = model.attributeMap[attributeKey].label;
+                var allOptions = getAllProcessAttributeValues(model, attributeKey);
+                var allWrongOptions = removeKeys(allOptions, correctOptions);
+                var correctOption = correctOptions[correctOptionIndex];
+                var questionOptions = getRandomSubset(Object.keys(allWrongOptions), options.optionCount - 1);
+                questionOptions.splice(randomInt(options.optionCount), 0, correctOption);
+
+                return {
+                    text: "$placeholder$ is " + prependAOrAn(attributeLabel).toLowerCase() + " of " + processLabel,
+                    options: questionOptions,
+                    answer: correctOption
+                };
+            })
+        };
+    }
 
     function isPublicAttributeKey(key) {
         return key.indexOf("__") !== 0;
@@ -52,7 +52,7 @@
         var result = {};
         var attributeIndex = model.attributeMap[attributeName].index;
 
-        model.items.forEach(function (item) {
+        model.items.forEach(function(item) {
             var attrValue = item[attributeIndex];
             if (Array.isArray(attrValue)) {
                 attrValue.forEach(function(value) {
@@ -67,7 +67,7 @@
     }
 
     function removeKeys(dict, keyNames) {
-        keyNames.forEach(function (key) {
+        keyNames.forEach(function(key) {
             delete dict[key];
         });
 
@@ -148,9 +148,9 @@
                     }
                 }
             },
-            getResult: function () {
+            getResult: function() {
                 return result;
             },
         };
     }
-})();
+});
