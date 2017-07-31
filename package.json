@@ -1,0 +1,10 @@
+  {
+      "name": "itto",
+      "version": "0.1.0",
+      "scripts": {
+          "build": "babel src -d ."
+      },
+      "devDependencies": {
+          "babel-cli": "^6.0.0"
+      }
+  }
