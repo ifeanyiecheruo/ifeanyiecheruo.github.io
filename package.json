@@ -1,10 +1,21 @@
-  {
-      "name": "itto",
-      "version": "0.1.0",
-      "scripts": {
-          "build": "babel src -d ."
-      },
-      "devDependencies": {
-          "babel-cli": "^6.0.0"
-      }
-  }
+{
+    "name": "itto",
+    "version": "0.1.0",
+    "description": "itto",
+    "repository": {
+        "type": "github",
+        "url": "https://github.com/ifeanyiecheruo/ifeanyiecheruo.github.io"
+    },
+    "license": "UNLICENSED",
+    "private": true,
+    "scripts": {
+        "build": "babel src -d scripts"
+    },
+    "dependencies": {},
+    "devDependencies": {
+        "react": "^15.6.1",
+        "react-dom": "^15.6.1",
+        "babel-cli": "^6.0.0",
+        "babel-plugin-transform-react-jsx": "^6.24.1"
+    }
+}

@@ -6,7 +6,13 @@
 requirejs.config({
     baseUrl: 'scripts',
     paths: {
-        app: 'app'
+        'app': 'app'
+    },
+    map: {
+        '*': {
+            "react": 'extern/react.min',
+            "react-dom": 'extern/react-dom.min',
+        }
     }
 });
 

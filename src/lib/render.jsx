@@ -10,77 +10,59 @@ define(function (require) {
     };
 
     function renderQuestionsReact(elem, questions) {
-        ReactDOM.render(QuestionList({ questions: questions }), elem);
+        ReactDOM.render(
+            QuestionList({ questions: questions }),
+            elem
+        );
     }
 
     function QuestionList(props) {
         const questionElements = props.questions.map(question => {
             const key = question.text + "|" + question.options.join("|");
-
-            return React.createElement(QuestionItem, { key: key, question: question });
+        
+            return <QuestionItem key={key} question={question} />;
         });
-
-        return React.createElement(
-            'ol',
-            { type: '1' },
-            questionElements
-        );
+        
+        return <ol type='1'>{questionElements}</ol>;
     }
 
     function QuestionItem(props) {
         const question = props.question;
         const selectedIndex = question.options.selectedIndex;
         let selectedText;
-
+        
         if (typeof selectedIndex === "number") {
-            selectedText = question.options[selectedIndex];
+            selectedText = question.options[selectedIndex]; 
         }
-
+        
         const replacement = selectedText || ".........";
         const displayText = question.text.replace("$placeholder$", replacement);
         const radioName = uuid();
         const optionElements = question.options.map((option, index) => {
-            return React.createElement(OptionItem, {
-                key: option,
-                option: option,
-                index: index,
-                radioName: radioName
-            });
+            return <OptionItem 
+                key={option}
+                option={option}
+                index={index}
+                radioName={radioName}
+                />;
         });
-
-        return React.createElement(
-            'li',
-            null,
-            React.createElement(
-                'span',
-                null,
-                displayText
-            ),
-            React.createElement(
-                'ol',
-                { type: 'a' },
-                optionElements
-            )
-        );
+        
+        return <li>
+            <span>{displayText}</span>
+            <ol type="a">{optionElements}</ol>
+            </li>;
     }
 
     function OptionItem(props) {
-        return React.createElement(
-            'li',
-            null,
-            React.createElement('input', {
-                type: 'radio',
-                value: props.option,
-                name: props.radioName,
-                change: onChanged }),
-            React.createElement(
-                'span',
-                null,
-                ' ',
-                option
-            )
-        );
-
+        return <li>
+            <input 
+                type="radio"
+                value={props.option}
+                name={props.radioName}
+                change={onChanged} />
+            <span> {option}</span>
+            </li>;
+            
         function onChanged(e) {
             e.preventDefault();
             question.options.selectedIndex = props.index;
@@ -147,7 +129,7 @@ define(function (require) {
     function renderModel(elem, model) {
         const formElem = window.document.createElement("form");
         if (model.onChanged) {
-            formElem.addEventListener("submit", function () {
+            formElem.addEventListener("submit", function() {
                 model.onChanged();
             });
         }
@@ -157,7 +139,7 @@ define(function (require) {
         // Build the header
         const tHeadElem = tableElem.createTHead();
         const trElem = window.document.createElement("tr");
-        Object.keys(model.attributeMap).forEach(function (key) {
+        Object.keys(model.attributeMap).forEach(function(key) {
             const attr = model.attributeMap[key];
             const attrIndex = attr.index;
 
@@ -172,7 +154,7 @@ define(function (require) {
 
         // Build the body
         const tBodyElem = tableElem.createTBody();
-        model.items.forEach(function (process) {
+        model.items.forEach(function(process) {
             // for each row
             renderModelRow(tBodyElem, model, process);
         });
@@ -183,7 +165,7 @@ define(function (require) {
 
         function renderModelRow(tHeadElem, model, process) {
             const trElem = tHeadElem.insertRow(-1);
-            Object.keys(model.attributeMap).forEach(function (key) {
+            Object.keys(model.attributeMap).forEach(function(key) {
                 // for each column
                 const attr = model.attributeMap[key];
                 const attrIndex = attr.index;
@@ -219,7 +201,7 @@ define(function (require) {
             let value;
 
             if (isArray) {
-                value = (text || "").split(",").map(function (item) {
+                value = (text || "").split(",").map(function(item) {
                     return item.trim();
                 });
             } else {
@@ -228,5 +210,6 @@ define(function (require) {
 
             return value;
         }
+
     }
 });
